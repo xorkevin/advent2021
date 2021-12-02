@@ -31,7 +31,10 @@ func main() {
 	aim := 0
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		arr := strings.Split(scanner.Text(), " ")
+		arr := strings.SplitN(scanner.Text(), " ", 2)
+		if len(arr) < 2 {
+			log.Fatalln("Invalid line format")
+		}
 		dir := arr[0]
 		num, err := strconv.Atoi(arr[1])
 		if err != nil {
