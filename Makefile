@@ -5,7 +5,7 @@ BUILD_DAYS=$(DAYS:.target=.build)
 
 build: $(BUILD_DAYS)
 
-bench:
+bench: build
 	./bench.sh
 
 .PHONY: $(BUILD_DAYS)
