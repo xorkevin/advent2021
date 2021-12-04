@@ -19,11 +19,6 @@ type (
 		Y int
 	}
 
-	Cell struct {
-		Val  int
-		Mark bool
-	}
-
 	Board struct {
 		Width    int
 		Height   int
