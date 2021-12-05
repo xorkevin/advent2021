@@ -76,6 +76,7 @@ func main() {
 	}
 
 	grid := map[Pos]int{}
+	grid2 := map[Pos]int{}
 	for _, i := range segs {
 		if i.P1.X == i.P2.X {
 			start, stop := minmax(i.P1.Y, i.P2.Y)
@@ -85,6 +86,10 @@ func main() {
 					grid[k] = 0
 				}
 				grid[k]++
+				if _, ok := grid2[k]; !ok {
+					grid2[k] = 0
+				}
+				grid2[k]++
 			}
 		} else if i.P1.Y == i.P2.Y {
 			start, stop := minmax(i.P1.X, i.P2.X)
@@ -94,24 +99,28 @@ func main() {
 					grid[k] = 0
 				}
 				grid[k]++
+				if _, ok := grid2[k]; !ok {
+					grid2[k] = 0
+				}
+				grid2[k]++
 			}
 		} else {
 			start := i.P1
 			stop := i.P2
 			dirX := sign(i.P2.X - i.P1.X)
 			dirY := sign(i.P2.Y - i.P1.Y)
-			for start != stop {
-				if _, ok := grid[start]; !ok {
-					grid[start] = 0
+			for start.X != stop.X {
+				if _, ok := grid2[start]; !ok {
+					grid2[start] = 0
 				}
-				grid[start]++
+				grid2[start]++
 				start.X += dirX
 				start.Y += dirY
 			}
-			if _, ok := grid[stop]; !ok {
-				grid[stop] = 0
+			if _, ok := grid2[stop]; !ok {
+				grid2[stop] = 0
 			}
-			grid[stop]++
+			grid2[stop]++
 		}
 	}
 
@@ -121,7 +130,14 @@ func main() {
 			count++
 		}
 	}
-	fmt.Println(count)
+	fmt.Println("Part 1:", count)
+	count2 := 0
+	for _, v := range grid2 {
+		if v > 1 {
+			count2++
+		}
+	}
+	fmt.Println("Part 2:", count2)
 }
 
 func minmax(a, b int) (int, int) {
