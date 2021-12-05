@@ -18,11 +18,6 @@ type (
 		X int
 		Y int
 	}
-
-	Line struct {
-		P1 Pos
-		P2 Pos
-	}
 )
 
 func main() {
@@ -36,52 +31,34 @@ func main() {
 		}
 	}()
 
-	var segs []Line
+	grid := map[Pos]int{}
+	grid2 := map[Pos]int{}
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		arr := strings.Split(scanner.Text(), " -> ")
 		lhs := strings.Split(arr[0], ",")
 		rhs := strings.Split(arr[1], ",")
-		lhs1, err := strconv.Atoi(lhs[0])
+		x1, err := strconv.Atoi(lhs[0])
 		if err != nil {
 			log.Fatal(err)
 		}
-		lhs2, err := strconv.Atoi(lhs[1])
+		y1, err := strconv.Atoi(lhs[1])
 		if err != nil {
 			log.Fatal(err)
 		}
-		rhs1, err := strconv.Atoi(rhs[0])
+		x2, err := strconv.Atoi(rhs[0])
 		if err != nil {
 			log.Fatal(err)
 		}
-		rhs2, err := strconv.Atoi(rhs[1])
+		y2, err := strconv.Atoi(rhs[1])
 		if err != nil {
 			log.Fatal(err)
 		}
-		segs = append(segs, Line{
-			P1: Pos{
-				X: lhs1,
-				Y: lhs2,
-			},
-			P2: Pos{
-				X: rhs1,
-				Y: rhs2,
-			},
-		})
-	}
-
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-	}
-
-	grid := map[Pos]int{}
-	grid2 := map[Pos]int{}
-	for _, i := range segs {
-		if i.P1.X == i.P2.X {
-			start, stop := minmax(i.P1.Y, i.P2.Y)
+		if x1 == x2 {
+			start, stop := minmax(y1, y2)
 			for j := start; j <= stop; j++ {
-				k := Pos{X: i.P1.X, Y: j}
+				k := Pos{X: x1, Y: j}
 				if _, ok := grid[k]; !ok {
 					grid[k] = 0
 				}
@@ -91,10 +68,10 @@ func main() {
 				}
 				grid2[k]++
 			}
-		} else if i.P1.Y == i.P2.Y {
-			start, stop := minmax(i.P1.X, i.P2.X)
+		} else if y1 == y2 {
+			start, stop := minmax(x1, x2)
 			for j := start; j <= stop; j++ {
-				k := Pos{X: j, Y: i.P1.Y}
+				k := Pos{X: j, Y: y1}
 				if _, ok := grid[k]; !ok {
 					grid[k] = 0
 				}
@@ -105,10 +82,10 @@ func main() {
 				grid2[k]++
 			}
 		} else {
-			start := i.P1
-			stop := i.P2
-			dirX := sign(i.P2.X - i.P1.X)
-			dirY := sign(i.P2.Y - i.P1.Y)
+			start := Pos{X: x1, Y: y1}
+			stop := Pos{X: x2, Y: y2}
+			dirX := sign(x2 - x1)
+			dirY := sign(y2 - y1)
 			for start.X != stop.X {
 				if _, ok := grid2[start]; !ok {
 					grid2[start] = 0
@@ -122,6 +99,10 @@ func main() {
 			}
 			grid2[stop]++
 		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
 	}
 
 	count := 0
