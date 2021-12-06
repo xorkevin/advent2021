@@ -40,7 +40,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	for n := 0; n < 256; n++ {
+	for k := 0; k < 256; k++ {
 		next := make([]int, 9)
 		for n, i := range nums {
 			if n == 0 {
@@ -51,7 +51,7 @@ func main() {
 			}
 		}
 		nums = next
-		if n == 79 {
+		if k == 79 {
 			count := 0
 			for _, i := range nums {
 				count += i
