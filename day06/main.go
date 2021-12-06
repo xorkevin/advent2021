@@ -1,0 +1,61 @@
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"log"
+	"os"
+	"strconv"
+	"strings"
+)
+
+const (
+	puzzleInput = "input.txt"
+)
+
+func main() {
+	file, err := os.Open(puzzleInput)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		if err := file.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	nums := make([]int, 9)
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		for _, i := range strings.Split(scanner.Text(), ",") {
+			num, err := strconv.Atoi(i)
+			if err != nil {
+				log.Fatal(err)
+			}
+			nums[num]++
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	for n := 0; n < 256; n++ {
+		next := make([]int, 9)
+		for n, i := range nums {
+			if n == 0 {
+				next[6] += i
+				next[8] += i
+			} else {
+				next[n-1] += i
+			}
+		}
+		nums = next
+	}
+
+	count := 0
+	for _, i := range nums {
+		count += i
+	}
+	fmt.Println(count)
+}
