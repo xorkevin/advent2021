@@ -51,11 +51,18 @@ func main() {
 			}
 		}
 		nums = next
+		if n == 79 {
+			count := 0
+			for _, i := range nums {
+				count += i
+			}
+			fmt.Println("Part 1:", count)
+		}
 	}
 
 	count := 0
 	for _, i := range nums {
 		count += i
 	}
-	fmt.Println(count)
+	fmt.Println("Part 2:", count)
 }
