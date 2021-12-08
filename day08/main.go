@@ -32,7 +32,7 @@ func main() {
 			log.Fatalln("Invalid line")
 		}
 		assigned := map[byte]int{}
-		possible := allPossibilities()
+		opts := allOpts()
 		ex6 := fullWires()
 		ex5 := fullWires()
 		for _, i := range strings.Fields(arr[0]) {
@@ -40,11 +40,11 @@ func main() {
 			l := len(wires)
 			switch l {
 			case 2: // 1
-				reducePossibilities(assigned, possible, wires, []int{0, 1, 3, 4, 6})
+				reduceOpts(assigned, opts, wires, []int{0, 1, 3, 4, 6})
 			case 4: // 4
-				reducePossibilities(assigned, possible, wires, []int{0, 4, 6})
+				reduceOpts(assigned, opts, wires, []int{0, 4, 6})
 			case 3: // 7
-				reducePossibilities(assigned, possible, wires, []int{1, 3, 4, 6})
+				reduceOpts(assigned, opts, wires, []int{1, 3, 4, 6})
 			case 7: // 8
 			case 6: // 0, 6, 9, common 0, 1, 5, 6
 				ex6 = reduceCommon(ex6, wires)
@@ -53,13 +53,13 @@ func main() {
 			}
 		}
 		if len(ex6) == 4 {
-			reducePossibilities(assigned, possible, values(ex6), []int{2, 3, 4})
+			reduceOpts(assigned, opts, values(ex6), []int{2, 3, 4})
 		}
 		if len(ex5) == 3 {
-			reducePossibilities(assigned, possible, values(ex5), []int{1, 2, 4, 5})
+			reduceOpts(assigned, opts, values(ex5), []int{1, 2, 4, 5})
 		}
 		if len(assigned) != 7 {
-			log.Fatalln("Failed to assign")
+			log.Fatalln("Failed to assign all")
 		}
 		num := 0
 		for _, i := range strings.Fields(arr[1]) {
@@ -159,7 +159,7 @@ func translateSeg5(segs []int) int {
 	return -1
 }
 
-func fullPossibilities() map[int]struct{} {
+func fullOpts() map[int]struct{} {
 	return map[int]struct{}{
 		0: {},
 		1: {},
@@ -171,25 +171,25 @@ func fullPossibilities() map[int]struct{} {
 	}
 }
 
-func allPossibilities() map[byte]map[int]struct{} {
+func allOpts() map[byte]map[int]struct{} {
 	return map[byte]map[int]struct{}{
-		'a': fullPossibilities(),
-		'b': fullPossibilities(),
-		'c': fullPossibilities(),
-		'd': fullPossibilities(),
-		'e': fullPossibilities(),
-		'f': fullPossibilities(),
-		'g': fullPossibilities(),
+		'a': fullOpts(),
+		'b': fullOpts(),
+		'c': fullOpts(),
+		'd': fullOpts(),
+		'e': fullOpts(),
+		'f': fullOpts(),
+		'g': fullOpts(),
 	}
 }
 
-func reducePossibilities(assigned map[byte]int, possible map[byte]map[int]struct{}, wires []byte, segs []int) {
+func reduceOpts(assigned map[byte]int, opts map[byte]map[int]struct{}, wires []byte, segs []int) {
 	changed := false
 	for _, i := range wires {
 		for _, j := range segs {
-			if _, ok := possible[i][j]; ok {
+			if _, ok := opts[i][j]; ok {
 				changed = true
-				delete(possible[i], j)
+				delete(opts[i], j)
 			}
 		}
 	}
@@ -198,7 +198,7 @@ func reducePossibilities(assigned map[byte]int, possible map[byte]map[int]struct
 	}
 	for {
 		changed := false
-		for k, v := range possible {
+		for k, v := range opts {
 			if _, ok := assigned[k]; ok {
 				continue
 			}
@@ -207,10 +207,10 @@ func reducePossibilities(assigned map[byte]int, possible map[byte]map[int]struct
 				assigned[k] = firstval(v)
 				continue
 			}
-			for _, b := range assigned {
-				if _, ok := v[b]; ok {
+			for _, i := range assigned {
+				if _, ok := v[i]; ok {
 					changed = true
-					delete(v, b)
+					delete(v, i)
 				}
 			}
 		}
@@ -220,8 +220,8 @@ func reducePossibilities(assigned map[byte]int, possible map[byte]map[int]struct
 	}
 }
 
-func firstval(possible map[int]struct{}) int {
-	for k := range possible {
+func firstval(opts map[int]struct{}) int {
+	for k := range opts {
 		return k
 	}
 	return -1
