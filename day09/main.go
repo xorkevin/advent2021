@@ -17,16 +17,16 @@ type (
 		grid  [][]byte
 		h     int
 		w     int
-		basin [][]byte
+		basin [][]bool
 	}
 )
 
 func NewGrid(grid [][]byte) *Grid {
 	h := len(grid)
 	w := len(grid[0])
-	basin := make([][]byte, h)
+	basin := make([][]bool, h)
 	for i := range basin {
-		basin[i] = make([]byte, w)
+		basin[i] = make([]bool, w)
 	}
 	return &Grid{
 		grid:  grid,
@@ -61,18 +61,18 @@ func (g *Grid) isLow(x, y int) bool {
 	return true
 }
 
-func (g *Grid) markBasin(k byte, x, y int) int {
+func (g *Grid) markBasin(x, y int) int {
 	if !g.inBounds(x, y) {
 		return 0
 	}
 	if g.grid[y][x] == '9' {
 		return 0
 	}
-	if g.basin[y][x] != 0 {
+	if g.basin[y][x] {
 		return 0
 	}
-	g.basin[y][x] = k
-	return 1 + g.markBasin(k, x-1, y) + g.markBasin(k, x, y-1) + g.markBasin(k, x+1, y) + g.markBasin(k, x, y+1)
+	g.basin[y][x] = true
+	return 1 + g.markBasin(x-1, y) + g.markBasin(x, y-1) + g.markBasin(x+1, y) + g.markBasin(x, y+1)
 }
 
 func main() {
@@ -100,15 +100,13 @@ func main() {
 	grid := NewGrid(rows)
 
 	count := 0
-	var basinnum byte = 1
 	var sizes []int
 	for r, i := range grid.grid {
 		for c := range i {
 			if grid.isLow(c, r) {
 				count += int(grid.grid[r][c]-'0') + 1
-				size := grid.markBasin(basinnum, c, r)
+				size := grid.markBasin(c, r)
 				sizes = append(sizes, size)
-				basinnum++
 			}
 		}
 	}
