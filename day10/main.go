@@ -68,12 +68,15 @@ func main() {
 	}
 
 	sort.Ints(completes)
-	fmt.Println(score)
-	fmt.Println(completes[len(completes)/2])
+
+	fmt.Println("Part 1:", score)
+	fmt.Println("Part 2:", completes[len(completes)/2])
 }
 
 func parsePair(s []byte) (int, int, int) {
-	stack := Stack{}
+	stack := Stack{
+		k: make([]byte, 0, len(s)),
+	}
 	for _, i := range s {
 		switch i {
 		case '(', '[', '{', '<':
