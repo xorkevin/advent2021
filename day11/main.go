@@ -12,6 +12,34 @@ const (
 )
 
 type (
+	Stack struct {
+		k []Pos
+	}
+)
+
+func (s *Stack) Push(c Pos) {
+	s.k = append(s.k, c)
+}
+
+func (s *Stack) Pop() (Pos, bool) {
+	l := len(s.k)
+	if l == 0 {
+		return Pos{}, false
+	}
+	v := s.k[l-1]
+	s.k = s.k[:l-1]
+	return v, true
+}
+
+func (s *Stack) Peek() (Pos, bool) {
+	l := len(s.k)
+	if l == 0 {
+		return Pos{}, false
+	}
+	return s.k[l-1], true
+}
+
+type (
 	Pos struct {
 		x, y int
 	}
@@ -38,7 +66,7 @@ func NewGrid(rows [][]int) *Grid {
 
 func (g *Grid) Step() int {
 	flashes := map[Pos]struct{}{}
-	var flashQueue []Pos
+	stack := Stack{}
 	for r, i := range g.rows {
 		for c := range i {
 			g.rows[r][c]++
@@ -48,79 +76,79 @@ func (g *Grid) Step() int {
 					y: r,
 				}
 				flashes[k] = struct{}{}
-				flashQueue = append(flashQueue, k)
+				stack.Push(k)
 			}
 		}
 	}
-	for len(flashQueue) > 0 {
-		var next []Pos
-		for _, i := range flashQueue {
-			if g.incr(i.x-1, i.y, flashes) {
-				k := Pos{
-					x: i.x - 1,
-					y: i.y,
-				}
-				flashes[k] = struct{}{}
-				next = append(next, k)
-			}
-			if g.incr(i.x-1, i.y-1, flashes) {
-				k := Pos{
-					x: i.x - 1,
-					y: i.y - 1,
-				}
-				flashes[k] = struct{}{}
-				next = append(next, k)
-			}
-			if g.incr(i.x, i.y-1, flashes) {
-				k := Pos{
-					x: i.x,
-					y: i.y - 1,
-				}
-				flashes[k] = struct{}{}
-				next = append(next, k)
-			}
-			if g.incr(i.x+1, i.y-1, flashes) {
-				k := Pos{
-					x: i.x + 1,
-					y: i.y - 1,
-				}
-				flashes[k] = struct{}{}
-				next = append(next, k)
-			}
-			if g.incr(i.x+1, i.y, flashes) {
-				k := Pos{
-					x: i.x + 1,
-					y: i.y,
-				}
-				flashes[k] = struct{}{}
-				next = append(next, k)
-			}
-			if g.incr(i.x+1, i.y+1, flashes) {
-				k := Pos{
-					x: i.x + 1,
-					y: i.y + 1,
-				}
-				flashes[k] = struct{}{}
-				next = append(next, k)
-			}
-			if g.incr(i.x, i.y+1, flashes) {
-				k := Pos{
-					x: i.x,
-					y: i.y + 1,
-				}
-				flashes[k] = struct{}{}
-				next = append(next, k)
-			}
-			if g.incr(i.x-1, i.y+1, flashes) {
-				k := Pos{
-					x: i.x - 1,
-					y: i.y + 1,
-				}
-				flashes[k] = struct{}{}
-				next = append(next, k)
-			}
+	for {
+		i, ok := stack.Pop()
+		if !ok {
+			break
 		}
-		flashQueue = next
+		if g.incr(i.x-1, i.y, flashes) {
+			k := Pos{
+				x: i.x - 1,
+				y: i.y,
+			}
+			flashes[k] = struct{}{}
+			stack.Push(k)
+		}
+		if g.incr(i.x-1, i.y-1, flashes) {
+			k := Pos{
+				x: i.x - 1,
+				y: i.y - 1,
+			}
+			flashes[k] = struct{}{}
+			stack.Push(k)
+		}
+		if g.incr(i.x, i.y-1, flashes) {
+			k := Pos{
+				x: i.x,
+				y: i.y - 1,
+			}
+			flashes[k] = struct{}{}
+			stack.Push(k)
+		}
+		if g.incr(i.x+1, i.y-1, flashes) {
+			k := Pos{
+				x: i.x + 1,
+				y: i.y - 1,
+			}
+			flashes[k] = struct{}{}
+			stack.Push(k)
+		}
+		if g.incr(i.x+1, i.y, flashes) {
+			k := Pos{
+				x: i.x + 1,
+				y: i.y,
+			}
+			flashes[k] = struct{}{}
+			stack.Push(k)
+		}
+		if g.incr(i.x+1, i.y+1, flashes) {
+			k := Pos{
+				x: i.x + 1,
+				y: i.y + 1,
+			}
+			flashes[k] = struct{}{}
+			stack.Push(k)
+		}
+		if g.incr(i.x, i.y+1, flashes) {
+			k := Pos{
+				x: i.x,
+				y: i.y + 1,
+			}
+			flashes[k] = struct{}{}
+			stack.Push(k)
+		}
+		if g.incr(i.x-1, i.y+1, flashes) {
+			k := Pos{
+				x: i.x - 1,
+				y: i.y + 1,
+			}
+			flashes[k] = struct{}{}
+			stack.Push(k)
+		}
 	}
 	for i := range flashes {
 		g.rows[i.y][i.x] = 0
@@ -142,10 +170,6 @@ func (g *Grid) incr(x, y int, flashes map[Pos]struct{}) bool {
 
 func (g *Grid) outBounds(x, y int) bool {
 	return x < 0 || y < 0 || x >= g.w || y >= g.h
-}
-
-func (g *Grid) inBounds(x, y int) bool {
-	return !g.outBounds(x, y)
 }
 
 func main() {
