@@ -76,7 +76,7 @@ func main() {
 		points = fold(points, axis == "y", axisval)
 		if first {
 			first = false
-			fmt.Println(len(points))
+			fmt.Println("Part 1:", len(points))
 		}
 	}
 
@@ -97,6 +97,7 @@ func main() {
 		grid[k.y][k.x] = '#'
 	}
 
+	fmt.Println("Part 2:")
 	for _, i := range grid {
 		fmt.Println(string(i))
 	}
