@@ -141,8 +141,55 @@ func abs(a int) int {
 	return a
 }
 
-func manhattanDistance(a, b Point) int {
+func manhattan(a, b Point) int {
 	return abs(a.x-b.x) + abs(a.y-b.y)
+}
+
+func neighbors(grid [][]int, p Point) []Point {
+	return []Point{
+		{x: p.x - 1, y: p.y},
+		{x: p.x, y: p.y - 1},
+		{x: p.x + 1, y: p.y},
+		{x: p.x, y: p.y + 1},
+	}
+}
+
+func inBounds(p Point, w, h int) bool {
+	return p.x >= 0 && p.x < w && p.y >= 0 && p.y < h
+}
+
+func getVal(grid [][]int, p Point, w, h int) int {
+	return (grid[p.y%h][p.x%w]+p.x/w+p.y/h-1)%9 + 1
+}
+
+func pathfind(grid [][]int, vw, vh int, start, end Point) int {
+	w := len(grid[0])
+	h := len(grid)
+	openSet := NewOpenSet()
+	openSet.Push(start, 0, manhattan(start, end))
+	closedSet := NewClosedSet()
+	for !openSet.Empty() {
+		cur, curg, _ := openSet.Pop()
+		closedSet.Push(cur)
+		if cur == end {
+			return curg
+		}
+		for _, i := range neighbors(grid, cur) {
+			if !inBounds(i, vw, vh) || closedSet.Has(i) {
+				continue
+			}
+			g := curg + getVal(grid, i, w, h)
+			f := g + manhattan(i, end)
+			if v, ok := openSet.Get(i); ok {
+				if g < v.g {
+					openSet.Update(i, g, f)
+				}
+				continue
+			}
+			openSet.Push(i, g, f)
+		}
+	}
+	return -1
 }
 
 func main() {
@@ -171,110 +218,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Part 1:", pathfind(grid, Point{0, 0}, Point{len(grid[0]) - 1, len(grid) - 1}))
-	fmt.Println("Part 2:", pathfind2(grid, Point{0, 0}, Point{len(grid[0])*5 - 1, len(grid)*5 - 1}))
-}
-
-func pathfind2(grid [][]int, start, end Point) int {
-	openSet := NewOpenSet()
-	openSet.Push(start, 0, manhattanDistance(start, end))
-	closedSet := NewClosedSet()
-	for !openSet.Empty() {
-		cur, curg, _ := openSet.Pop()
-		closedSet.Push(cur)
-		if cur == end {
-			return curg
-		}
-		for _, i := range neighbors2(grid, cur) {
-			if closedSet.Has(i) {
-				continue
-			}
-			g := curg + getVal(grid, i)
-			f := g + manhattanDistance(i, end)
-			if v, ok := openSet.Get(i); ok {
-				if g < v.g {
-					openSet.Update(i, g, f)
-				}
-				continue
-			}
-			openSet.Push(i, g, f)
-		}
-	}
-	return -1
-}
-
-func getVal(grid [][]int, p Point) int {
-	sx := len(grid[0])
-	sy := len(grid)
-	return (grid[p.y%sy][p.x%sx]+p.x/sx+p.y/sy-1)%9 + 1
-}
-
-func neighbors2(grid [][]int, p Point) []Point {
-	points := make([]Point, 0, 4)
-	if k := (Point{x: p.x - 1, y: p.y}); inBounds2(grid, k) {
-		points = append(points, k)
-	}
-	if k := (Point{x: p.x, y: p.y - 1}); inBounds2(grid, k) {
-		points = append(points, k)
-	}
-	if k := (Point{x: p.x + 1, y: p.y}); inBounds2(grid, k) {
-		points = append(points, k)
-	}
-	if k := (Point{x: p.x, y: p.y + 1}); inBounds2(grid, k) {
-		points = append(points, k)
-	}
-	return points
-}
-
-func inBounds2(grid [][]int, p Point) bool {
-	return p.x >= 0 && p.x < len(grid[0])*5 && p.y >= 0 && p.y < len(grid)*5
-}
-
-func pathfind(grid [][]int, start, end Point) int {
-	openSet := NewOpenSet()
-	openSet.Push(start, 0, manhattanDistance(start, end))
-	closedSet := NewClosedSet()
-	for !openSet.Empty() {
-		cur, curg, _ := openSet.Pop()
-		closedSet.Push(cur)
-		if cur == end {
-			return curg
-		}
-		for _, i := range neighbors(grid, cur) {
-			if closedSet.Has(i) {
-				continue
-			}
-			g := curg + grid[i.y][i.x]
-			f := g + manhattanDistance(i, end)
-			if v, ok := openSet.Get(i); ok {
-				if g < v.g {
-					openSet.Update(i, g, f)
-				}
-				continue
-			}
-			openSet.Push(i, g, f)
-		}
-	}
-	return -1
-}
-
-func neighbors(grid [][]int, p Point) []Point {
-	points := make([]Point, 0, 4)
-	if k := (Point{x: p.x - 1, y: p.y}); inBounds(grid, k) {
-		points = append(points, k)
-	}
-	if k := (Point{x: p.x, y: p.y - 1}); inBounds(grid, k) {
-		points = append(points, k)
-	}
-	if k := (Point{x: p.x + 1, y: p.y}); inBounds(grid, k) {
-		points = append(points, k)
-	}
-	if k := (Point{x: p.x, y: p.y + 1}); inBounds(grid, k) {
-		points = append(points, k)
-	}
-	return points
-}
-
-func inBounds(grid [][]int, p Point) bool {
-	return p.x >= 0 && p.x < len(grid[0]) && p.y >= 0 && p.y < len(grid)
+	fmt.Println("Part 1:", pathfind(grid, len(grid[0]), len(grid), Point{0, 0}, Point{len(grid[0]) - 1, len(grid) - 1}))
+	fmt.Println("Part 2:", pathfind(grid, len(grid[0])*5, len(grid)*5, Point{0, 0}, Point{len(grid[0])*5 - 1, len(grid)*5 - 1}))
 }
