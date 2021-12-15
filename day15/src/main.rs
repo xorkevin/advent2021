@@ -121,7 +121,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Point(0, 0),
             Point(grid[0].len() * 5 - 1, grid.len() * 5 - 1)
         )
-        .ok_or("Fail part 1")?
+        .ok_or("Fail part 2")?
     );
     Ok(())
 }
