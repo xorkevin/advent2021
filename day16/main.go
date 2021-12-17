@@ -139,95 +139,90 @@ func evalPacket(offset int, tokens []int) (int, int, []int, bool) {
 			return 0, origOffset, origTokens, false
 		}
 		return tokens[0], tokens[1], tokens[2:], true
-	} else {
-		if len(tokens) < 3 {
+	}
+	if len(tokens) < 3 {
+		return 0, origOffset, origTokens, false
+	}
+	mode := tokens[0]
+	l := tokens[1]
+	offset = tokens[2]
+	var vals []int
+	if mode == 0 {
+		var ok bool
+		vals, offset, tokens, ok = parseSubpackets0(l, offset, tokens[3:])
+		if !ok {
 			return 0, origOffset, origTokens, false
 		}
-		mode := tokens[0]
-		l := tokens[1]
-		offset = tokens[2]
-		var vals []int
-		if mode == 0 {
-			var ok bool
-			vals, offset, tokens, ok = parseSubpackets0(l, offset, tokens[3:])
-			if !ok {
-				return 0, origOffset, origTokens, false
-			}
-		} else {
-			var ok bool
-			vals, offset, tokens, ok = parseSubpackets1(l, offset, tokens[3:])
-			if !ok {
-				return 0, origOffset, origTokens, false
-			}
+	} else {
+		var ok bool
+		vals, offset, tokens, ok = parseSubpackets1(l, offset, tokens[3:])
+		if !ok {
+			return 0, origOffset, origTokens, false
 		}
-		switch id {
-		case 0:
-			{
-				k := 0
-				for _, i := range vals {
-					k += i
-				}
-				return k, offset, tokens, true
+	}
+	switch id {
+	case 0:
+		{
+			k := 0
+			for _, i := range vals {
+				k += i
 			}
-		case 1:
-			{
-				k := 1
-				for _, i := range vals {
-					k *= i
-				}
-				return k, offset, tokens, true
+			return k, offset, tokens, true
+		}
+	case 1:
+		{
+			k := 1
+			for _, i := range vals {
+				k *= i
 			}
-		case 2:
-			{
-				k := vals[0]
-				for _, i := range vals {
-					if i < k {
-						k = i
-					}
+			return k, offset, tokens, true
+		}
+	case 2:
+		{
+			k := vals[0]
+			for _, i := range vals {
+				if i < k {
+					k = i
 				}
-				return k, offset, tokens, true
 			}
-		case 3:
-			{
-				k := vals[0]
-				for _, i := range vals {
-					if i > k {
-						k = i
-					}
+			return k, offset, tokens, true
+		}
+	case 3:
+		{
+			k := vals[0]
+			for _, i := range vals {
+				if i > k {
+					k = i
 				}
-				return k, offset, tokens, true
 			}
-		case 5:
-			{
-				k := 0
-				if vals[0] > vals[1] {
-					k = 1
-				}
-				return k, offset, tokens, true
+			return k, offset, tokens, true
+		}
+	case 5:
+		{
+			k := 0
+			if vals[0] > vals[1] {
+				k = 1
 			}
-		case 6:
-			{
-				k := 0
-				if vals[0] < vals[1] {
-					k = 1
-				}
-				return k, offset, tokens, true
+			return k, offset, tokens, true
+		}
+	case 6:
+		{
+			k := 0
+			if vals[0] < vals[1] {
+				k = 1
 			}
-		case 7:
-			{
-				k := 0
-				if vals[0] == vals[1] {
-					k = 1
-				}
-				return k, offset, tokens, true
+			return k, offset, tokens, true
+		}
+	case 7:
+		{
+			k := 0
+			if vals[0] == vals[1] {
+				k = 1
 			}
+			return k, offset, tokens, true
 		}
 	}
 	return 0, origOffset, origTokens, false
-}
-
-func findVersionSum(tokens []int) int {
-	return 0
 }
 
 func main() {
