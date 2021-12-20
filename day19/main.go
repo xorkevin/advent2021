@@ -145,10 +145,13 @@ func calculateTranslation(possibleEdges []PossibleEdges, pointTranslation map[Ve
 	first := possibleEdges[0]
 	for _, i := range first.a {
 		for _, j := range first.b {
+			origA, hasA := pointTranslation[i.a]
+			origB, hasB := pointTranslation[i.b]
+			if len(pointTranslation) != 0 && !hasA && !hasB {
+				goto third
+			}
 			{
 				// suppose i.a is j.a and i.b is j.b
-				origA, hasA := pointTranslation[i.a]
-				origB, hasB := pointTranslation[i.b]
 				if hasA && origA != j.a || hasB && origB != j.b {
 					goto second
 				}
@@ -171,8 +174,6 @@ func calculateTranslation(possibleEdges []PossibleEdges, pointTranslation map[Ve
 		second:
 			{
 				// suppose i.a is j.b and i.b is j.a
-				origA, hasA := pointTranslation[i.a]
-				origB, hasB := pointTranslation[i.b]
 				if hasA && origA != j.b || hasB && origB != j.a {
 					goto third
 				}
@@ -350,7 +351,7 @@ func main() {
 				aa, ab := get3Vec(assignment)
 				t1, t2, t3, ok := findTransform(aa, ab)
 				if !ok {
-					continue
+					log.Fatalln("Failed to find transform")
 				}
 				alignScanner(scannerlogs[i], t1, t2, t3)
 				alignedScanners = append(alignedScanners, scannerlogs[i])
