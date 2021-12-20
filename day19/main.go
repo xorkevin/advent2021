@@ -10,12 +10,16 @@ import (
 )
 
 const (
-	puzzleInput = "input2.txt"
+	puzzleInput = "input.txt"
 )
 
 type (
 	Vec3 struct {
 		x, y, z int
+	}
+
+	Mat3 struct {
+		x, y, z Vec3
 	}
 
 	Edge struct {
@@ -66,7 +70,35 @@ func orderedDist(a, b Vec3) Vec3 {
 	return k
 }
 
-func NewScannerLog(scans []Vec3) *ScannerLog {
+func vecDot(a, b Vec3) int {
+	return a.x*b.x + a.y*b.y + a.z*b.z
+}
+
+func matDot(a Mat3, b Vec3) Vec3 {
+	return Vec3{
+		x: vecDot(a.x, b),
+		y: vecDot(a.y, b),
+		z: vecDot(a.z, b),
+	}
+}
+
+func vecNeg(v Vec3) Vec3 {
+	return Vec3{
+		x: -v.x,
+		y: -v.y,
+		z: -v.z,
+	}
+}
+
+func vecSum(a, b Vec3) Vec3 {
+	return Vec3{
+		x: a.x + b.x,
+		y: a.y + b.y,
+		z: a.z + b.z,
+	}
+}
+
+func computeDists(scans []Vec3) map[Vec3][]Edge {
 	dists := map[Vec3][]Edge{}
 	l := len(scans)
 	for i := 0; i < l; i++ {
@@ -75,21 +107,22 @@ func NewScannerLog(scans []Vec3) *ScannerLog {
 			dists[k] = append(dists[k], Edge{scans[i], scans[j]})
 		}
 	}
+	return dists
+}
+
+func NewScannerLog(scans []Vec3) *ScannerLog {
 	return &ScannerLog{
 		Scans: scans,
-		Dists: dists,
+		Dists: computeDists(scans),
 	}
 }
 
-func (s *ScannerLog) IntersectDists(o *ScannerLog) ([]PossibleEdges, int) {
+func intersectDists(s, o map[Vec3][]Edge) []PossibleEdges {
 	var dists []PossibleEdges
-	count := 0
-	for k, v := range o.Dists {
-		m := min(len(s.Dists[k]), len(v))
-		count += m
-		if m > 0 {
-			a := make([]Edge, len(s.Dists[k]))
-			copy(a, s.Dists[k])
+	for k, v := range o {
+		if min(len(s[k]), len(v)) > 0 {
+			a := make([]Edge, len(s[k]))
+			copy(a, s[k])
 			b := make([]Edge, len(v))
 			copy(b, v)
 			dists = append(dists, PossibleEdges{
@@ -98,12 +131,12 @@ func (s *ScannerLog) IntersectDists(o *ScannerLog) ([]PossibleEdges, int) {
 			})
 		}
 	}
-	return dists, count
+	return dists
 }
 
-func calculateTranslation(possibleEdges []PossibleEdges, pointTranslation map[Vec3]Vec3) bool {
+func calculateTranslation(possibleEdges []PossibleEdges, pointTranslation map[Vec3]Vec3, target int) bool {
 	if len(possibleEdges) == 0 {
-		return len(pointTranslation) > 2
+		return len(pointTranslation) >= target
 	}
 	first := possibleEdges[0]
 	for _, i := range first.a {
@@ -121,7 +154,7 @@ func calculateTranslation(possibleEdges []PossibleEdges, pointTranslation map[Ve
 				if !hasB {
 					pointTranslation[i.b] = j.b
 				}
-				if ok := calculateTranslation(possibleEdges[1:], pointTranslation); ok {
+				if ok := calculateTranslation(possibleEdges[1:], pointTranslation, target); ok {
 					return true
 				}
 				if !hasA {
@@ -145,7 +178,7 @@ func calculateTranslation(possibleEdges []PossibleEdges, pointTranslation map[Ve
 				if !hasB {
 					pointTranslation[i.b] = j.a
 				}
-				if ok := calculateTranslation(possibleEdges[1:], pointTranslation); ok {
+				if ok := calculateTranslation(possibleEdges[1:], pointTranslation, target); ok {
 					return true
 				}
 				if !hasA {
@@ -156,12 +189,78 @@ func calculateTranslation(possibleEdges []PossibleEdges, pointTranslation map[Ve
 				}
 			}
 		third:
-			if ok := calculateTranslation(possibleEdges[1:], pointTranslation); ok {
+			if ok := calculateTranslation(possibleEdges[1:], pointTranslation, target); ok {
 				return true
 			}
 		}
 	}
 	return false
+}
+
+func get3Vec(m map[Vec3]Vec3) ([]Vec3, []Vec3) {
+	var a, b []Vec3
+	for k, v := range m {
+		if len(a) >= 3 {
+			break
+		}
+		a = append(a, k)
+		b = append(b, v)
+	}
+	return a, b
+}
+
+var (
+	rotationMatricies = []Mat3{
+		{Vec3{1, 0, 0}, Vec3{0, 1, 0}, Vec3{0, 0, 1}},
+		{Vec3{-1, 0, 0}, Vec3{0, -1, 0}, Vec3{0, 0, 1}},
+		{Vec3{-1, 0, 0}, Vec3{0, 1, 0}, Vec3{0, 0, -1}},
+		{Vec3{1, 0, 0}, Vec3{0, -1, 0}, Vec3{0, 0, -1}},
+		{Vec3{-1, 0, 0}, Vec3{0, 0, 1}, Vec3{0, 1, 0}},
+		{Vec3{1, 0, 0}, Vec3{0, 0, -1}, Vec3{0, 1, 0}},
+		{Vec3{1, 0, 0}, Vec3{0, 0, 1}, Vec3{0, -1, 0}},
+		{Vec3{-1, 0, 0}, Vec3{0, 0, -1}, Vec3{0, -1, 0}},
+		{Vec3{0, -1, 0}, Vec3{1, 0, 0}, Vec3{0, 0, 1}},
+		{Vec3{0, 1, 0}, Vec3{-1, 0, 0}, Vec3{0, 0, 1}},
+		{Vec3{0, 1, 0}, Vec3{1, 0, 0}, Vec3{0, 0, -1}},
+		{Vec3{0, -1, 0}, Vec3{-1, 0, 0}, Vec3{0, 0, -1}},
+		{Vec3{0, 1, 0}, Vec3{0, 0, 1}, Vec3{1, 0, 0}},
+		{Vec3{0, -1, 0}, Vec3{0, 0, -1}, Vec3{1, 0, 0}},
+		{Vec3{0, -1, 0}, Vec3{0, 0, 1}, Vec3{-1, 0, 0}},
+		{Vec3{0, 1, 0}, Vec3{0, 0, -1}, Vec3{-1, 0, 0}},
+		{Vec3{0, 0, 1}, Vec3{1, 0, 0}, Vec3{0, 1, 0}},
+		{Vec3{0, 0, -1}, Vec3{-1, 0, 0}, Vec3{0, 1, 0}},
+		{Vec3{0, 0, -1}, Vec3{1, 0, 0}, Vec3{0, -1, 0}},
+		{Vec3{0, 0, 1}, Vec3{-1, 0, 0}, Vec3{0, -1, 0}},
+		{Vec3{0, 0, -1}, Vec3{0, 1, 0}, Vec3{1, 0, 0}},
+		{Vec3{0, 0, 1}, Vec3{0, -1, 0}, Vec3{1, 0, 0}},
+		{Vec3{0, 0, 1}, Vec3{0, 1, 0}, Vec3{-1, 0, 0}},
+		{Vec3{0, 0, -1}, Vec3{0, -1, 0}, Vec3{-1, 0, 0}},
+	}
+)
+
+func findTransform(a, b []Vec3) (Vec3, Mat3, Vec3, bool) {
+	t1 := vecNeg(b[0])
+	t3 := a[0]
+	for _, i := range rotationMatricies {
+		if a[1] == vecSum(matDot(i, vecSum(b[1], t1)), t3) && a[2] == vecSum(matDot(i, vecSum(b[2], t1)), t3) {
+			return t1, i, t3, true
+		}
+	}
+	return Vec3{}, Mat3{}, Vec3{}, false
+}
+
+func markGrid(grid map[Vec3]struct{}, points []Vec3, t1 Vec3, t2 Mat3, t3 Vec3) {
+	for _, i := range points {
+		grid[vecSum(matDot(t2, vecSum(i, t1)), t3)] = struct{}{}
+	}
+}
+
+func gridToList(g map[Vec3]struct{}) []Vec3 {
+	k := make([]Vec3, 0, len(g))
+	for i := range g {
+		k = append(k, i)
+	}
+	return k
 }
 
 func main() {
@@ -217,20 +316,33 @@ func main() {
 		scans = nil
 	}
 
-	for i := 0; i < len(scannerlogs); i++ {
-		for j := i + 1; j < len(scannerlogs); j++ {
-			possibleEdges, count := scannerlogs[i].IntersectDists(scannerlogs[j])
-			if count < 11 {
+	grid := map[Vec3]struct{}{}
+	markGrid(grid, scannerlogs[0].Scans, Vec3{0, 0, 0}, rotationMatricies[0], Vec3{0, 0, 0})
+	dists := scannerlogs[0].Dists
+	scannerlogs = scannerlogs[1:]
+
+	for len(scannerlogs) != 0 {
+		for i := 0; i < len(scannerlogs); i++ {
+			possibleEdges := intersectDists(dists, scannerlogs[i].Dists)
+			if len(possibleEdges) < 11 {
 				continue
 			}
 			assignment := map[Vec3]Vec3{}
-			if !calculateTranslation(possibleEdges, assignment) {
+			if !calculateTranslation(possibleEdges, assignment, 12) {
 				continue
 			}
-			if len(assignment) < 12 {
+			aa, ab := get3Vec(assignment)
+			t1, t2, t3, ok := findTransform(aa, ab)
+			if !ok {
 				continue
 			}
-			fmt.Println(i, j, assignment)
+			markGrid(grid, scannerlogs[i].Scans, t1, t2, t3)
+			dists = computeDists(gridToList(grid))
+			copy(scannerlogs[i:], scannerlogs[i+1:])
+			scannerlogs = scannerlogs[:len(scannerlogs)-1]
+			break
 		}
 	}
+
+	fmt.Println(len(grid))
 }
