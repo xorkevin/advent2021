@@ -28,6 +28,7 @@ type (
 	}
 
 	ScannerLog struct {
+		Pos   Vec3
 		Scans []Vec3
 		Dists map[Vec3][]Edge
 	}
@@ -50,6 +51,10 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func absManhattan(a, b Vec3) int {
+	return abs(a.x, b.x) + abs(a.y, b.y) + abs(a.z, b.z)
 }
 
 func orderedDist(a, b Vec3) Vec3 {
@@ -98,7 +103,7 @@ func vecSum(a, b Vec3) Vec3 {
 	}
 }
 
-func computeDists(scans []Vec3) map[Vec3][]Edge {
+func NewScannerLog(scans []Vec3) *ScannerLog {
 	dists := map[Vec3][]Edge{}
 	l := len(scans)
 	for i := 0; i < l; i++ {
@@ -107,13 +112,10 @@ func computeDists(scans []Vec3) map[Vec3][]Edge {
 			dists[k] = append(dists[k], Edge{scans[i], scans[j]})
 		}
 	}
-	return dists
-}
-
-func NewScannerLog(scans []Vec3) *ScannerLog {
 	return &ScannerLog{
+		Pos:   Vec3{0, 0, 0},
 		Scans: scans,
-		Dists: computeDists(scans),
+		Dists: dists,
 	}
 }
 
@@ -255,12 +257,21 @@ func markGrid(grid map[Vec3]struct{}, points []Vec3, t1 Vec3, t2 Mat3, t3 Vec3) 
 	}
 }
 
-func gridToList(g map[Vec3]struct{}) []Vec3 {
-	k := make([]Vec3, 0, len(g))
-	for i := range g {
-		k = append(k, i)
+func alignScanner(s *ScannerLog, t1 Vec3, t2 Mat3, t3 Vec3) {
+	s.Pos = vecSum(matDot(t2, vecSum(s.Pos, t1)), t3)
+	for i := 0; i < len(s.Scans); i++ {
+		s.Scans[i] = vecSum(matDot(t2, vecSum(s.Scans[i], t1)), t3)
 	}
-	return k
+	for k, v := range s.Dists {
+		e := make([]Edge, 0, len(v))
+		for _, i := range v {
+			e = append(e, Edge{
+				a: vecSum(matDot(t2, vecSum(i.a, t1)), t3),
+				b: vecSum(matDot(t2, vecSum(i.b, t1)), t3),
+			})
+		}
+		s.Dists[k] = e
+	}
 }
 
 func main() {
@@ -316,33 +327,53 @@ func main() {
 		scans = nil
 	}
 
-	grid := map[Vec3]struct{}{}
-	markGrid(grid, scannerlogs[0].Scans, Vec3{0, 0, 0}, rotationMatricies[0], Vec3{0, 0, 0})
-	dists := scannerlogs[0].Dists
+	alignedScanners := make([]*ScannerLog, 0, len(scannerlogs))
+	alignedScanners = append(alignedScanners, scannerlogs[0])
 	scannerlogs = scannerlogs[1:]
 
 	for len(scannerlogs) != 0 {
-		for i := 0; i < len(scannerlogs); i++ {
-			possibleEdges := intersectDists(dists, scannerlogs[i].Dists)
-			if len(possibleEdges) < 11 {
-				continue
+		for _, s := range alignedScanners {
+			for i := 0; i < len(scannerlogs); i++ {
+				possibleEdges := intersectDists(s.Dists, scannerlogs[i].Dists)
+				if len(possibleEdges) < 11 {
+					continue
+				}
+				assignment := map[Vec3]Vec3{}
+				if !calculateTranslation(possibleEdges, assignment, 12) {
+					continue
+				}
+				aa, ab := get3Vec(assignment)
+				t1, t2, t3, ok := findTransform(aa, ab)
+				if !ok {
+					continue
+				}
+				alignScanner(scannerlogs[i], t1, t2, t3)
+				alignedScanners = append(alignedScanners, scannerlogs[i])
+				scannerlogs[i] = scannerlogs[len(scannerlogs)-1]
+				scannerlogs = scannerlogs[:len(scannerlogs)-1]
+				break
 			}
-			assignment := map[Vec3]Vec3{}
-			if !calculateTranslation(possibleEdges, assignment, 12) {
-				continue
-			}
-			aa, ab := get3Vec(assignment)
-			t1, t2, t3, ok := findTransform(aa, ab)
-			if !ok {
-				continue
-			}
-			markGrid(grid, scannerlogs[i].Scans, t1, t2, t3)
-			dists = computeDists(gridToList(grid))
-			copy(scannerlogs[i:], scannerlogs[i+1:])
-			scannerlogs = scannerlogs[:len(scannerlogs)-1]
-			break
 		}
 	}
 
-	fmt.Println(len(grid))
+	grid := map[Vec3]struct{}{}
+	for _, i := range alignedScanners {
+		for _, j := range i.Scans {
+			grid[j] = struct{}{}
+		}
+	}
+
+	fmt.Println("Part 1:", len(grid))
+
+	maxDist := 0
+	for i := 0; i < len(alignedScanners); i++ {
+		for j := i + 1; j < len(alignedScanners); j++ {
+			k := absManhattan(alignedScanners[i].Pos, alignedScanners[j].Pos)
+			if k > maxDist {
+				maxDist = k
+			}
+		}
+	}
+
+	fmt.Println("Part 2:", maxDist)
 }
