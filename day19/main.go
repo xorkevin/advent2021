@@ -28,6 +28,7 @@ type (
 	}
 
 	ScannerLog struct {
+		ID    string
 		Pos   Vec3
 		Scans []Vec3
 		Dists map[Vec3][]Edge
@@ -103,7 +104,7 @@ func vecSum(a, b Vec3) Vec3 {
 	}
 }
 
-func NewScannerLog(scans []Vec3) *ScannerLog {
+func NewScannerLog(id string, scans []Vec3) *ScannerLog {
 	dists := map[Vec3][]Edge{}
 	l := len(scans)
 	for i := 0; i < l; i++ {
@@ -113,6 +114,7 @@ func NewScannerLog(scans []Vec3) *ScannerLog {
 		}
 	}
 	return &ScannerLog{
+		ID:    id,
 		Pos:   Vec3{0, 0, 0},
 		Scans: scans,
 		Dists: dists,
@@ -286,17 +288,19 @@ func main() {
 	}()
 
 	var scannerlogs []*ScannerLog
+	var id string
 	var scans []Vec3
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
 		if len(line) == 0 {
-			scannerlogs = append(scannerlogs, NewScannerLog(scans))
+			scannerlogs = append(scannerlogs, NewScannerLog(id, scans))
 			scans = nil
 			continue
 		}
 		if strings.HasPrefix(line, "---") {
+			id = line
 			continue
 		}
 		arr := strings.SplitN(line, ",", 3)
@@ -323,7 +327,8 @@ func main() {
 	}
 
 	if len(scans) > 0 {
-		scannerlogs = append(scannerlogs, NewScannerLog(scans))
+		scannerlogs = append(scannerlogs, NewScannerLog(id, scans))
+		id = ""
 		scans = nil
 	}
 
