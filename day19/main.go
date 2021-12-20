@@ -139,8 +139,11 @@ func intersectDists(s, o map[Vec3][]Edge) []PossibleEdges {
 }
 
 func calculateTranslation(possibleEdges []PossibleEdges, pointTranslation map[Vec3]Vec3, target int) bool {
+	if len(pointTranslation) >= target {
+		return true
+	}
 	if len(possibleEdges) == 0 {
-		return len(pointTranslation) >= target
+		return false
 	}
 	first := possibleEdges[0]
 	for _, i := range first.a {
