@@ -145,6 +145,9 @@ func calculateTranslation(possibleEdges []PossibleEdges, pointTranslation map[Ve
 	if len(possibleEdges) == 0 {
 		return false
 	}
+	if len(possibleEdges)+len(pointTranslation) < target {
+		return false
+	}
 	first := possibleEdges[0]
 	for _, i := range first.a {
 		for _, j := range first.b {
