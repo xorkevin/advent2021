@@ -381,8 +381,7 @@ func main() {
   #########
 `)
 
-	fmt.Println(startState)
-	fmt.Println(pathfind(startState, 2, 3))
+	fmt.Println("Part 1:", pathfind(startState, 2, 3))
 
 	startState = calcStart(`
 #############
@@ -394,6 +393,5 @@ func main() {
   #########
 `)
 
-	fmt.Println(startState)
-	fmt.Println(pathfind(startState, 4, 5))
+	fmt.Println("Part 2:", pathfind(startState, 4, 5))
 }
