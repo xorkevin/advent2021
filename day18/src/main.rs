@@ -13,6 +13,11 @@ enum Token {
     Num(i32),
 }
 
+enum Pair {
+    Val(i32),
+    Pair((Box<Pair>, Box<Pair>)),
+}
+
 fn tokenize(mut b: Peekable<Iter<u8>>) -> Result<Vec<Token>, Box<dyn std::error::Error>> {
     let mut tokens = Vec::new();
     while let Some(&c) = b.next() {
@@ -32,13 +37,49 @@ fn tokenize(mut b: Peekable<Iter<u8>>) -> Result<Vec<Token>, Box<dyn std::error:
     Ok(tokens)
 }
 
+fn parse_tokens(tokens: &[Token]) -> Option<(Pair, &[Token])> {
+    let (head, rest) = match tokens {
+        [head, rest @ ..] => (head, rest),
+        &[] => return None,
+    };
+    match head {
+        Token::Num(val) => Some((Pair::Val(*val), rest)),
+        Token::Lparen => {
+            let (lhs, rest1) = match parse_tokens(rest) {
+                Some((k, rest)) => (k, rest),
+                None => return None,
+            };
+            let (rhs, rest2) = match parse_tokens(rest1) {
+                Some((k, rest)) => (k, rest),
+                None => return None,
+            };
+            Some((Pair::Pair((Box::new(lhs), Box::new(rhs))), rest2))
+        }
+        Token::Rparen => None,
+    }
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let file = File::open(PUZZLEINPUT)?;
     let reader = BufReader::new(file);
 
+    let mut root = None;
     for line in reader.lines() {
         let tokens = tokenize(line?.as_bytes().into_iter().peekable())?;
+        let pair = match parse_tokens(&tokens) {
+            Some((pair, _)) => pair,
+            None => return Err("Invalid line".into()),
+        };
+        let k = match root {
+            Some(r) => Pair::Pair((Box::new(r), Box::new(pair))),
+            None => pair,
+        };
+        root = Some(k);
         println!("{:?}", tokens);
     }
+    let mut _root = match root {
+        Some(r) => r,
+        None => return Err("Invalid line".into()),
+    };
     Ok(())
 }
