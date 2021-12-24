@@ -13,9 +13,93 @@ enum Token {
     Num(i32),
 }
 
+#[derive(Clone)]
 enum Pair {
     Val(i32),
     Pair((Box<Pair>, Box<Pair>)),
+}
+
+impl Pair {
+    fn add_left(&mut self, v: i32) {
+        match self {
+            Pair::Pair((lhs, _)) => lhs.add_left(v),
+            Pair::Val(val) => *val += v,
+        }
+    }
+
+    fn add_right(&mut self, v: i32) {
+        match self {
+            Pair::Pair((_, rhs)) => rhs.add_right(v),
+            Pair::Val(val) => *val += v,
+        }
+    }
+
+    fn explode(&mut self, depth: usize) -> Option<(i32, i32)> {
+        let (lhs, rhs) = match self {
+            Pair::Pair((lhs, rhs)) => (lhs, rhs),
+            Pair::Val(_) => return None,
+        };
+        if depth > 3 {
+            let lhs = match **lhs {
+                Pair::Pair(_) => return None,
+                Pair::Val(v) => v,
+            };
+            let rhs = match **rhs {
+                Pair::Pair(_) => return None,
+                Pair::Val(v) => v,
+            };
+            *self = Pair::Val(0);
+            Some((lhs, rhs))
+        } else {
+            if let Some((l, r)) = lhs.explode(depth + 1) {
+                if r != 0 {
+                    rhs.add_left(r);
+                }
+                return Some((l, 0));
+            }
+            if let Some((l, r)) = rhs.explode(depth + 1) {
+                if l != 0 {
+                    lhs.add_right(l);
+                }
+                return Some((0, r));
+            }
+            None
+        }
+    }
+
+    fn split(&mut self) -> bool {
+        match self {
+            Pair::Pair((lhs, rhs)) => lhs.split() || rhs.split(),
+            Pair::Val(v) => {
+                return if *v > 9 {
+                    let l = *v / 2;
+                    let r = *v - l;
+                    *self = Pair::Pair((Box::new(Pair::Val(l)), Box::new(Pair::Val(r))));
+                    true
+                } else {
+                    false
+                }
+            }
+        }
+    }
+
+    fn reduce_step(&mut self) -> bool {
+        if let Some(_) = self.explode(0) {
+            return true;
+        }
+        return self.split();
+    }
+
+    fn reduce(&mut self) {
+        while self.reduce_step() {}
+    }
+
+    fn magnitude(&self) -> i32 {
+        match self {
+            Pair::Pair((lhs, rhs)) => lhs.magnitude() * 3 + rhs.magnitude() * 2,
+            Pair::Val(v) => *v,
+        }
+    }
 }
 
 fn tokenize(mut b: Peekable<Iter<u8>>) -> Result<Vec<Token>, Box<dyn std::error::Error>> {
@@ -53,7 +137,11 @@ fn parse_tokens(tokens: &[Token]) -> Option<(Pair, &[Token])> {
                 Some((k, rest)) => (k, rest),
                 None => return None,
             };
-            Some((Pair::Pair((Box::new(lhs), Box::new(rhs))), rest2))
+            let rest3 = match rest2 {
+                [Token::Rparen, rest @ ..] => rest,
+                _ => return None,
+            };
+            Some((Pair::Pair((Box::new(lhs), Box::new(rhs))), rest3))
         }
         Token::Rparen => None,
     }
@@ -64,22 +152,43 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let reader = BufReader::new(file);
 
     let mut root = None;
+    let mut nums = Vec::new();
     for line in reader.lines() {
         let tokens = tokenize(line?.as_bytes().into_iter().peekable())?;
         let pair = match parse_tokens(&tokens) {
             Some((pair, _)) => pair,
             None => return Err("Invalid line".into()),
         };
-        let k = match root {
+        nums.push(pair.clone());
+        let mut k = match root {
             Some(r) => Pair::Pair((Box::new(r), Box::new(pair))),
             None => pair,
         };
+        k.reduce();
         root = Some(k);
-        println!("{:?}", tokens);
     }
-    let mut _root = match root {
-        Some(r) => r,
-        None => return Err("Invalid line".into()),
+    match root {
+        Some(r) => println!("Part 1: {}", r.magnitude()),
+        None => return Err("No vals".into()),
     };
+
+    match (0..nums.len() - 1)
+        .into_iter()
+        .flat_map(|i| {
+            (i + 1..nums.len())
+                .into_iter()
+                .flat_map(move |j| vec![(i, j), (j, i)])
+        })
+        .map(|(i, j)| {
+            let mut k = Pair::Pair((Box::new(nums[i].clone()), Box::new(nums[j].clone())));
+            k.reduce();
+            k.magnitude()
+        })
+        .max()
+    {
+        Some(v) => println!("Part 2: {}", v),
+        None => return Err("No vals".into()),
+    }
+
     Ok(())
 }
